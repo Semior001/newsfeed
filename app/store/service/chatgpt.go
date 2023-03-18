@@ -1,4 +1,3 @@
-// Package chatgpt contains interface for chatgpt service.
 package service
 
 import (

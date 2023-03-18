@@ -1,3 +1,5 @@
+// Package service contains services and wrappers for operating articles
+// and users.
 package service
 
 import (
