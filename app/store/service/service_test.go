@@ -1,4 +1,4 @@
-package chatgpt
+package service
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/Semior001/newsfeed/app/store"
+	"github.com/go-pkgz/lgr"
 	"github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,8 +23,10 @@ func TestService_GetArticle(t *testing.T) {
 	defer ts.Close()
 
 	svc := Service{
-		cl: ts.Client(),
+		log: lgr.Default(),
+		cl:  ts.Client(),
 		chatGPT: ChatGPT{
+			log: lgr.Default(),
 			cl: &OpenAIClientMock{
 				CreateChatCompletionFunc: func(
 					ctx context.Context,

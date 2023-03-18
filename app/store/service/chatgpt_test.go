@@ -1,4 +1,4 @@
-package chatgpt
+package service
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/Semior001/newsfeed/app/store"
+	"github.com/go-pkgz/lgr"
 	"github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,6 +18,7 @@ var chatGPTRequest string
 
 func TestChatGPT_Shorten(t *testing.T) {
 	cl := &ChatGPT{
+		log: lgr.Default(),
 		cl: &OpenAIClientMock{
 			CreateChatCompletionFunc: func(
 				ctx context.Context,

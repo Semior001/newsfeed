@@ -1,4 +1,4 @@
-package chatgpt
+package service
 
 import (
 	"context"
@@ -11,14 +11,14 @@ import (
 
 // Service is a main application service.
 type Service struct {
-	log       *lgr.Logger
+	log       lgr.L
 	cl        *http.Client
 	chatGPT   ChatGPT
 	extractor Extractor
 }
 
 // NewService creates new service.
-func NewService(lg *lgr.Logger, cl *http.Client, chatGPT ChatGPT, extractor Extractor) *Service {
+func NewService(lg lgr.L, cl *http.Client, chatGPT ChatGPT, extractor Extractor) *Service {
 	return &Service{
 		log:       lg,
 		cl:        cl,

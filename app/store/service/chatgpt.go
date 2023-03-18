@@ -1,5 +1,5 @@
 // Package chatgpt contains interface for chatgpt service.
-package chatgpt
+package service
 
 import (
 	"context"
@@ -27,13 +27,13 @@ type OpenAIClient interface {
 
 // ChatGPT is a client to make requests to OpenAI chatgpt service.
 type ChatGPT struct {
-	log       *lgr.Logger
+	log       lgr.L
 	cl        OpenAIClient
 	maxTokens int
 }
 
 // NewChatGPT creates new ChatGPT client.
-func NewChatGPT(lg *lgr.Logger, cl *http.Client, token string, maxTokens int) *ChatGPT {
+func NewChatGPT(lg lgr.L, cl *http.Client, token string, maxTokens int) *ChatGPT {
 	config := openai.DefaultConfig(token)
 	config.HTTPClient = cl
 
