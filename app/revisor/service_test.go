@@ -1,4 +1,4 @@
-package service
+package revisor
 
 import (
 	"context"
@@ -8,10 +8,10 @@ import (
 	"testing"
 
 	"github.com/Semior001/newsfeed/app/store"
-	"github.com/go-pkgz/lgr"
 	"github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/slog"
 )
 
 func TestService_GetArticle(t *testing.T) {
@@ -23,10 +23,10 @@ func TestService_GetArticle(t *testing.T) {
 	defer ts.Close()
 
 	svc := Service{
-		log: lgr.Default(),
+		log: slog.Default(),
 		cl:  ts.Client(),
-		chatGPT: ChatGPT{
-			log: lgr.Default(),
+		chatGPT: &ChatGPT{
+			log: slog.Default(),
 			cl: &OpenAIClientMock{
 				CreateChatCompletionFunc: func(
 					ctx context.Context,
@@ -61,6 +61,7 @@ func TestService_GetArticle(t *testing.T) {
 	err = json.Unmarshal(articleContent, &expected)
 	require.NoError(t, err)
 	expected.BulletPoints = "shortened content"
+	expected.URL = ts.URL
 
 	assert.Equal(t, expected, article)
 }

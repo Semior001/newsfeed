@@ -3,16 +3,18 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"runtime/debug"
 
-	"github.com/hashicorp/logutils"
+	"github.com/Semior001/newsfeed/app/cmd"
 	"github.com/jessevdk/go-flags"
+	"golang.org/x/exp/slog"
 )
 
 var opts struct {
-	Debug bool `long:"dbg" env:"DEBUG" description:"turn on debug mode"`
+	Run      cmd.Run `command:"run" description:"run newsfeed bot"`
+	JSONLogs bool    `long:"json-logs" env:"JSON_LOGS" description:"turn on json logs"`
+	Debug    bool    `long:"dbg" env:"DEBUG" description:"turn on debug mode"`
 }
 
 var version = "unknown"
@@ -30,10 +32,10 @@ func main() {
 
 	p := flags.NewParser(&opts, flags.Default)
 	p.CommandHandler = func(cmd flags.Commander, args []string) error {
-		setupLog(opts.Debug)
+		setupLog()
 
 		if err := cmd.Execute(args); err != nil {
-			log.Printf("[ERROR] failed to execute command: %+v", err)
+			slog.Error("failed to execute command", slog.Any("err", err))
 			os.Exit(1)
 		}
 
@@ -45,26 +47,30 @@ func main() {
 		if flagsErr, ok := err.(*flags.Error); ok && flagsErr.Type == flags.ErrHelp {
 			os.Exit(0)
 		} else {
-			log.Printf("[ERROR] failed to parse flags: %+v", err)
+			slog.Error("failed to parse flags", slog.Any("err", err))
 			os.Exit(1)
 		}
 	}
 }
 
-func setupLog(dbg bool) {
-	filter := &logutils.LevelFilter{
-		Levels:   []logutils.LogLevel{"DEBUG", "INFO", "WARN", "ERROR"},
-		MinLevel: "INFO",
-		Writer:   os.Stdout,
+func setupLog() {
+	handler := slog.HandlerOptions{
+		AddSource:   false,
+		Level:       slog.LevelInfo,
+		ReplaceAttr: nil,
 	}
 
-	logFlags := log.Ldate | log.Ltime
-
-	if dbg {
-		logFlags = log.Ldate | log.Ltime | log.Lmicroseconds | log.Llongfile
-		filter.MinLevel = "DEBUG"
+	if opts.Debug {
+		handler.Level = slog.LevelDebug
+		handler.AddSource = true
 	}
 
-	log.SetFlags(logFlags)
-	log.SetOutput(filter)
+	if opts.JSONLogs {
+		lg := slog.New(handler.NewJSONHandler(os.Stderr))
+		slog.SetDefault(lg)
+		return
+	}
+
+	lg := slog.New(handler.NewTextHandler(os.Stderr))
+	slog.SetDefault(lg)
 }

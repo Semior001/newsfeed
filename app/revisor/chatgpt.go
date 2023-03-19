@@ -1,4 +1,4 @@
-package service
+package revisor
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/Semior001/newsfeed/app/store"
-	"github.com/go-pkgz/lgr"
 	"github.com/sashabaranov/go-openai"
+	"golang.org/x/exp/slog"
 )
 
 //go:embed data/prompt.tmpl
@@ -26,13 +26,13 @@ type OpenAIClient interface {
 
 // ChatGPT is a client to make requests to OpenAI chatgpt service.
 type ChatGPT struct {
-	log       lgr.L
+	log       *slog.Logger
 	cl        OpenAIClient
 	maxTokens int
 }
 
 // NewChatGPT creates new ChatGPT client.
-func NewChatGPT(lg lgr.L, cl *http.Client, token string, maxTokens int) *ChatGPT {
+func NewChatGPT(lg *slog.Logger, cl *http.Client, token string, maxTokens int) *ChatGPT {
 	config := openai.DefaultConfig(token)
 	config.HTTPClient = cl
 
@@ -61,7 +61,7 @@ func (s *ChatGPT) BulletPoints(ctx context.Context, article store.Article) (stri
 		},
 	}
 
-	s.log.Logf("[DEBUG] sending request to OpenAI: %+v", req)
+	s.log.DebugCtx(ctx, "sending request to OpenAI", slog.Any("request", req))
 
 	resp, err := s.cl.CreateChatCompletion(ctx, req)
 	if err != nil {

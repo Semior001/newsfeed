@@ -1,4 +1,4 @@
-package service
+package revisor
 
 import (
 	"fmt"
@@ -16,9 +16,8 @@ type Extractor struct {
 }
 
 // NewExtractor creates new Extractor.
-func NewExtractor(debug bool) Extractor {
+func NewExtractor() Extractor {
 	svc := Extractor{parser: readability.NewParser()}
-	svc.parser.Debug = debug
 
 	return svc
 }

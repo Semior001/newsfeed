@@ -3,12 +3,15 @@ module github.com/Semior001/newsfeed
 go 1.20
 
 require (
-	github.com/go-pkgz/lgr v0.11.0
 	github.com/go-shiori/go-readability v0.0.0-20220215145315-dd6828d2f09b
-	github.com/hashicorp/logutils v1.0.0
+	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/jessevdk/go-flags v1.5.0
+	github.com/samber/lo v1.37.0
 	github.com/sashabaranov/go-openai v1.5.3
 	github.com/stretchr/testify v1.8.2
+	go.etcd.io/bbolt v1.3.2
+	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0
+	golang.org/x/sync v0.0.0-20181221193216-37e7f081c4d4
 )
 
 require (

@@ -1,6 +1,5 @@
-// Package service contains services and wrappers for operating articles
-// and users.
-package service
+// Package revisor contains services for processing and retrieving articles.
+package revisor
 
 import (
 	"context"
@@ -8,19 +7,19 @@ import (
 	"net/http"
 
 	"github.com/Semior001/newsfeed/app/store"
-	"github.com/go-pkgz/lgr"
+	"golang.org/x/exp/slog"
 )
 
 // Service is a main application service.
 type Service struct {
-	log       lgr.L
+	log       *slog.Logger
 	cl        *http.Client
-	chatGPT   ChatGPT
+	chatGPT   *ChatGPT
 	extractor Extractor
 }
 
 // NewService creates new service.
-func NewService(lg lgr.L, cl *http.Client, chatGPT ChatGPT, extractor Extractor) *Service {
+func NewService(lg *slog.Logger, cl *http.Client, chatGPT *ChatGPT, extractor Extractor) *Service {
 	return &Service{
 		log:       lg,
 		cl:        cl,
@@ -31,7 +30,7 @@ func NewService(lg lgr.L, cl *http.Client, chatGPT ChatGPT, extractor Extractor)
 
 // GetArticle shortens article.
 func (s *Service) GetArticle(ctx context.Context, u string) (store.Article, error) {
-	s.log.Logf("[DEBUG] aggregating article from %q", u)
+	s.log.DebugCtx(ctx, "aggregating article from", slog.String("url", u))
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
 	if err != nil {
@@ -44,7 +43,7 @@ func (s *Service) GetArticle(ctx context.Context, u string) (store.Article, erro
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			s.log.Logf("[WARN] failed to close response body: %v", err)
+			s.log.WarnCtx(ctx, "failed to close response body", slog.Any("err", err))
 		}
 	}()
 
@@ -61,6 +60,8 @@ func (s *Service) GetArticle(ctx context.Context, u string) (store.Article, erro
 	if article.BulletPoints, err = s.chatGPT.BulletPoints(ctx, article); err != nil {
 		return store.Article{}, fmt.Errorf("get bullet points: %w", err)
 	}
+
+	article.URL = u
 
 	return article, nil
 }

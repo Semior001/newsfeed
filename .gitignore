@@ -19,5 +19,4 @@
 .idea
 **/.env
 .vscode
-db
 bin/
