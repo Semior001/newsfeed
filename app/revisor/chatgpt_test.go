@@ -4,11 +4,9 @@ import (
 	"context"
 	_ "embed"
 	"encoding/json"
-	"net/http"
 	"testing"
 
 	"github.com/Semior001/newsfeed/app/store"
-	"github.com/jessevdk/go-flags"
 	"github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,28 +15,6 @@ import (
 
 //go:embed data/test/chatgpt_request.txt
 var chatGPTRequest string
-
-func TestChatGPT_Integration(t *testing.T) {
-	var opts struct {
-		Token string `env:"OPENAI_TOKEN"`
-	}
-
-	_, err := flags.NewParser(&opts, flags.Default|flags.IgnoreUnknown).Parse()
-	require.NoError(t, err)
-
-	cl := NewChatGPT(slog.Default(), &http.Client{}, opts.Token, 1000)
-
-	resp, err := cl.cl.CreateChatCompletion(context.Background(), openai.ChatCompletionRequest{
-		Model:     openai.GPT3Dot5Turbo,
-		MaxTokens: cl.maxTokens,
-		Messages: []openai.ChatCompletionMessage{
-			{Role: openai.ChatMessageRoleUser, Content: "are you alive?"},
-		},
-	})
-	require.NoError(t, err)
-
-	t.Log(resp)
-}
 
 func TestChatGPT_Shorten(t *testing.T) {
 	cl := &ChatGPT{
