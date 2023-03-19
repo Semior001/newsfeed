@@ -56,12 +56,11 @@ func (s *Service) GetArticle(ctx context.Context, u string) (store.Article, erro
 	if err != nil {
 		return store.Article{}, fmt.Errorf("extract article: %w", err)
 	}
+	article.URL = u
 
 	if article.BulletPoints, err = s.chatGPT.BulletPoints(ctx, article); err != nil {
 		return store.Article{}, fmt.Errorf("get bullet points: %w", err)
 	}
-
-	article.URL = u
 
 	return article, nil
 }

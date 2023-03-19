@@ -4,11 +4,12 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"html/template"
 	"net/http"
 	"strings"
+	"text/template"
 
 	"github.com/Semior001/newsfeed/app/store"
+	cache "github.com/go-pkgz/expirable-cache/v2"
 	"github.com/sashabaranov/go-openai"
 	"golang.org/x/exp/slog"
 )
@@ -29,6 +30,7 @@ type ChatGPT struct {
 	log               *slog.Logger
 	cl                OpenAIClient
 	maxResponseTokens int
+	cache             cache.Cache[string, string]
 }
 
 // NewChatGPT creates new ChatGPT client.
@@ -42,6 +44,9 @@ func NewChatGPT(lg *slog.Logger, cl *http.Client, token string, maxResponseToken
 		log:               lg,
 		cl:                &loggingClient{log: lg, cl: client},
 		maxResponseTokens: maxResponseTokens,
+		cache: cache.NewCache[string, string]().
+			WithLRU().
+			WithMaxKeys(100),
 	}
 }
 
@@ -53,6 +58,10 @@ var ErrTooManyTokens = fmt.Errorf("too many tokens")
 
 // BulletPoints shortens article.
 func (s *ChatGPT) BulletPoints(ctx context.Context, article store.Article) (string, error) {
+	if resp, ok := s.cache.Get(article.URL); ok {
+		return resp, nil
+	}
+
 	buf := &strings.Builder{}
 
 	if err := promptTmpl.Execute(buf, article); err != nil {
@@ -81,7 +90,9 @@ func (s *ChatGPT) BulletPoints(ctx context.Context, article store.Article) (stri
 		return "", fmt.Errorf("no choices in response")
 	}
 
-	return resp.Choices[0].Message.Content, nil
+	result := resp.Choices[0].Message.Content
+	s.cache.Set(article.URL, result, 0)
+	return result, nil
 }
 
 type loggingClient struct {

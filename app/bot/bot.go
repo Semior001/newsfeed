@@ -5,9 +5,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"html/template"
 	"net/url"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/Semior001/newsfeed/app/bot/route"
@@ -219,6 +219,14 @@ func (b *Bot) article(ctx context.Context, req route.Request) ([]route.Response,
 				"You can send me a link to any article, in order to test my capability of shortening it.\n" +
 				"But do not overuse it, please, we don't have an unlimited amount of free API calls.",
 		}}, nil
+	}
+
+	err := b.ctrl.SendMessage(ctx, route.Response{
+		ChatID: req.Chat.ID,
+		Text:   "I'm working on it, please wait...",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("send start message: %w", err)
 	}
 
 	article, err := b.svc.GetArticle(ctx, req.Text)

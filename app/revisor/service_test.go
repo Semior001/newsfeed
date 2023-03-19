@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/Semior001/newsfeed/app/store"
+	cache "github.com/go-pkgz/expirable-cache/v2"
 	"github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,7 +27,8 @@ func TestService_GetArticle(t *testing.T) {
 		log: slog.Default(),
 		cl:  ts.Client(),
 		chatGPT: &ChatGPT{
-			log: slog.Default(),
+			cache: cache.NewCache[string, string](),
+			log:   slog.Default(),
 			cl: &OpenAIClientMock{
 				CreateChatCompletionFunc: func(
 					ctx context.Context,

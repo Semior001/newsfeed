@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/Semior001/newsfeed/app/store"
+	cache "github.com/go-pkgz/expirable-cache/v2"
 	"github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,7 +19,8 @@ var chatGPTRequest string
 
 func TestChatGPT_Shorten(t *testing.T) {
 	cl := &ChatGPT{
-		log: slog.Default(),
+		log:   slog.Default(),
+		cache: cache.NewCache[string, string](),
 		cl: &OpenAIClientMock{
 			CreateChatCompletionFunc: func(
 				ctx context.Context,

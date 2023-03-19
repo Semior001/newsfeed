@@ -3,6 +3,7 @@ module github.com/Semior001/newsfeed
 go 1.20
 
 require (
+	github.com/go-pkgz/expirable-cache/v2 v2.0.0
 	github.com/go-shiori/go-readability v0.0.0-20220215145315-dd6828d2f09b
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/google/uuid v1.3.0
