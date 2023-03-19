@@ -60,42 +60,47 @@ func Recover(lg *slog.Logger) func(Handler) Handler {
 	}
 }
 
-// AppendID defines whether to append request id to response.
-type AppendID uint8
-
-// AppendID values.
-const (
-	DontAppendID AppendID = iota
-	AppendIDOnError
-	AlwaysAppendID
-)
-
 // RequestID is a middleware that adds request id to context.
-func RequestID(lvl AppendID) func(next Handler) Handler {
+func RequestID() func(Handler) Handler {
 	return func(next Handler) Handler {
 		return func(ctx context.Context, req Request) ([]Response, error) {
 			id := uuid.New().String()
 			ctx = logging.ContextWithRequestID(ctx, id)
 
+			return next(ctx, req)
+		}
+	}
+}
+
+// AppendRequestIDOnError is a middleware that responds with error message.
+func AppendRequestIDOnError() func(Handler) Handler {
+	return func(next Handler) Handler {
+		return func(ctx context.Context, req Request) ([]Response, error) {
 			resps, err := next(ctx, req)
+			if err == nil {
+				return resps, nil
+			}
 
-			appendID := func() {
-				for i := range resps {
-					resps[i].Text += fmt.Sprintf("\n\nRequest ID: %s", id)
+			reqID, _ := logging.RequestIDFromContext(ctx)
+
+			hasRequester := false
+			for i := range resps {
+				resps[i].Text += fmt.Sprintf("\n\nRequest ID: `%s`", reqID)
+				if resps[i].ChatID == req.Chat.ID {
+					hasRequester = true
 				}
 			}
 
-			switch lvl {
-			case AlwaysAppendID:
-				appendID()
-			case AppendIDOnError:
-				if err != nil {
-					appendID()
-				}
-			default:
+			if !hasRequester {
+				resps = append(resps, Response{
+					ChatID: req.Chat.ID,
+					Text: fmt.Sprintf("Something went wrong. "+
+						"Please, ask admin for help."+
+						"\n\nRequest ID: `%s`", reqID),
+				})
 			}
 
-			return resps, err
+			return resps, nil
 		}
 	}
 }
