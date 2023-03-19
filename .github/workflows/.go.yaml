@@ -79,5 +79,7 @@ jobs:
           tags: ghcr.io/semior001/newsfeed:latest,ghcr.io/semior001/newsfeed:${{github.ref_name}}
 
       - name: curl updater
+        id: curl_updater
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
         run:
           curl https://upd.semior.dev/update/newsfeed/${{secrets.UPDATER_TOKEN}}
