@@ -60,8 +60,17 @@ func Recover(lg *slog.Logger) func(Handler) Handler {
 	}
 }
 
+// AppendID defines whether to append request id to response.
+type AppendID uint8
+
+const (
+	DontAppendID AppendID = iota
+	AppendIDOnError
+	AlwaysAppendID
+)
+
 // RequestID is a middleware that adds request id to context.
-func RequestID(appendID bool) func(next Handler) Handler {
+func RequestID(lvl AppendID) func(next Handler) Handler {
 	return func(next Handler) Handler {
 		return func(ctx context.Context, req Request) ([]Response, error) {
 			id := uuid.New().String()
@@ -69,12 +78,20 @@ func RequestID(appendID bool) func(next Handler) Handler {
 
 			resps, err := next(ctx, req)
 
-			if appendID {
-				if reqID, ok := logging.RequestIDFromContext(ctx); ok {
-					for i := range resps {
-						resps[i].Text += fmt.Sprintf("\n\nRequest ID: %s", reqID)
-					}
+			appendID := func() {
+				for i := range resps {
+					resps[i].Text += fmt.Sprintf("\n\nRequest ID: %s", id)
 				}
+			}
+
+			switch lvl {
+			case AlwaysAppendID:
+				appendID()
+			case AppendIDOnError:
+				if err != nil {
+					appendID()
+				}
+			default:
 			}
 
 			return resps, err

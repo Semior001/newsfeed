@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/Semior001/newsfeed/app/bot/route"
-	"github.com/Semior001/newsfeed/app/logging"
 	"github.com/Semior001/newsfeed/app/revisor"
 	"github.com/Semior001/newsfeed/app/store"
 	"github.com/samber/lo"
@@ -65,7 +64,7 @@ func New(lg *slog.Logger, ctrl Controller, s store.Interface, svc *revisor.Servi
 		})),
 	})
 
-	rtr = route.RequestID(false)(
+	rtr = route.RequestID(route.AppendIDOnError)(
 		route.Recover(lg)(
 			route.Logger(lg)(rtr),
 		),
@@ -106,15 +105,13 @@ func (b *Bot) handleUpdate(ctx context.Context, req route.Request) {
 		defer cancel()
 	}
 
-	reqID, _ := logging.RequestIDFromContext(ctx)
-
 	resps, err := b.h(ctx, req)
 	if err != nil {
 		b.logger.WarnCtx(ctx, "failed to handle request", slog.Any("err", err))
 
 		resp := route.Response{
 			ChatID: req.Chat.ID,
-			Text:   fmt.Sprintf("Something went wrong, please ask admin for help.\n\nRequest ID: %s", reqID),
+			Text:   "Something went wrong, please ask admin for help.",
 		}
 
 		if err = b.ctrl.SendMessage(ctx, resp); err != nil {
