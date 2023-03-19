@@ -324,6 +324,10 @@ func (b *Bot) register(ctx context.Context, req route.Request) ([]route.Response
 	const response = "Hello! In order to subscribe to news, you need to provide a token,\n" +
 		"please ask admin for it and then send it to me."
 
+	if err := b.notifyAdmins(ctx, fmt.Sprintf("new user: %s", req.Chat.Username)); err != nil {
+		b.logger.WarnCtx(ctx, "notify admins about registered user", slog.Any("err", err))
+	}
+
 	return []route.Response{{
 		ChatID: req.Chat.ID,
 		Text:   response,
