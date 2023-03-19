@@ -94,6 +94,11 @@ func (b *Telegram) SendMessage(ctx context.Context, resp route.Response) error {
 	msg := tgbotapi.NewMessage(chatID, resp.Text)
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.DisableWebPagePreview = true
+	if resp.ReplyToMessageID != "" {
+		if msg.ReplyToMessageID, err = strconv.Atoi(resp.ReplyToMessageID); err != nil {
+			return fmt.Errorf("parse reply to message id: %w", err)
+		}
+	}
 
 	if _, err = b.api.Send(msg); err != nil {
 		return fmt.Errorf("send message: %w", err)

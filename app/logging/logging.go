@@ -7,38 +7,39 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-type requestIDKey struct{}
+// HandleFunc is a function that handles a record.
+type HandleFunc func(context.Context, slog.Record) error
 
-// ContextWithRequestID returns a new context with the given request ID.
-func ContextWithRequestID(parent context.Context, reqID string) context.Context {
-	return context.WithValue(parent, requestIDKey{}, reqID)
-}
+// Middleware is a middleware for logging handler.
+type Middleware func(HandleFunc) HandleFunc
 
-// RequestIDFromContext returns request id from context.
-func RequestIDFromContext(ctx context.Context) (string, bool) {
-	v, ok := ctx.Value(requestIDKey{}).(string)
-	return v, ok
-}
-
-// Handler is a middleware for logging request id.
-type Handler struct {
+// Chain is a chain of middleware.
+type Chain struct {
+	Middleware []Middleware
 	slog.Handler
 }
 
-// Handle implements slog.Handler interface.
-func (h Handler) Handle(ctx context.Context, rec slog.Record) error {
-	if reqID, ok := RequestIDFromContext(ctx); ok {
-		rec.AddAttrs(slog.String("request_id", reqID))
+// Handle runs the chain of middleware and the handler.
+func (c *Chain) Handle(ctx context.Context, rec slog.Record) error {
+	h := c.Handler.Handle
+	for i := len(c.Middleware) - 1; i >= 0; i-- {
+		h = c.Middleware[i](h)
 	}
-	return h.Handler.Handle(ctx, rec)
+	return h(ctx, rec)
 }
 
-// WithGroup returns a new Handler with the given group.
-func (h Handler) WithGroup(group string) slog.Handler {
-	return Handler{Handler: h.Handler.WithGroup(group)}
+// WithGroup returns a new Chain with the given group.
+func (c *Chain) WithGroup(group string) slog.Handler {
+	return &Chain{
+		Middleware: c.Middleware,
+		Handler:    c.Handler.WithGroup(group),
+	}
 }
 
-// WithAttrs returns a new Handler with the given attributes.
-func (h Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return Handler{Handler: h.Handler.WithAttrs(attrs)}
+// WithAttrs returns a new Chain with the given attributes.
+func (c *Chain) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return &Chain{
+		Middleware: c.Middleware,
+		Handler:    c.Handler.WithAttrs(attrs),
+	}
 }

@@ -72,6 +72,12 @@ func setupLog() {
 		h = handler.NewJSONHandler(os.Stderr)
 	}
 
-	lg := slog.New(logging.Handler{Handler: h})
+	lg := slog.New(&logging.Chain{
+		Handler: h,
+		Middleware: []logging.Middleware{
+			logging.RequestID(),
+			logging.StacktraceOnError(),
+		},
+	})
 	slog.SetDefault(lg)
 }

@@ -8,14 +8,16 @@ type Handler func(ctx context.Context, req Request) ([]Response, error)
 
 // Response is a response from handler.
 type Response struct {
-	ChatID string
-	Text   string
+	ReplyToMessageID string
+	ChatID           string
+	Text             string
 }
 
 // Request is a request for handler.
 type Request struct {
-	Chat Chat
-	Text string
+	MessageID string
+	Chat      Chat
+	Text      string
 }
 
 // Chat contains chat information.

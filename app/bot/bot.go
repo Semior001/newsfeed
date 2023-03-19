@@ -125,7 +125,7 @@ func (b *Bot) handleUpdate(ctx context.Context, req route.Request) {
 
 	resps, err := b.h(ctx, req)
 	if err != nil {
-		b.logger.WarnCtx(ctx, "failed to handle request", slog.Any("err", err))
+		b.logger.ErrorCtx(ctx, "failed to handle request", slog.Any("err", err))
 	}
 
 	for _, resp := range resps {
