@@ -61,6 +61,7 @@ func New(lg *slog.Logger, ctrl Controller, s store.Interface, svc *revisor.Servi
 			"/stop":   bot.stop,
 			"/list":   bot.ensureAdmin(bot.list),
 			"/delete": bot.ensureAdmin(bot.delete),
+			"/cache":  bot.ensureAdmin(bot.cacheStats),
 		})),
 	})
 
@@ -203,6 +204,15 @@ func (b *Bot) delete(ctx context.Context, req route.Request) ([]route.Response, 
 	}}, nil
 }
 
+func (b *Bot) cacheStats(_ context.Context, req route.Request) ([]route.Response, error) {
+	stats := b.svc.GPTCacheStat()
+	return []route.Response{{
+		ChatID: req.Chat.ID,
+		Text: fmt.Sprintf("hits: %d, misses: %d, evictions: %d, size: %d\n",
+			stats.Hits, stats.Misses, stats.Evicted, stats.Added),
+	}}, nil
+}
+
 var articleMessageTmpl = template.Must(template.New("articleMessage").Parse(`
 *{{.Title}} by {{.Author}}*
 
@@ -251,6 +261,7 @@ func (b *Bot) article(ctx context.Context, req route.Request) ([]route.Response,
 		Text:   sb.String(),
 	}}, nil
 }
+
 func (b *Bot) ensureAdmin(h route.Handler) route.Handler {
 	return func(ctx context.Context, req route.Request) ([]route.Response, error) {
 		if !lo.Contains(b.AdminIDs, req.Chat.ID) {

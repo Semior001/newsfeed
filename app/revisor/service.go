@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/Semior001/newsfeed/app/store"
+	cache "github.com/go-pkgz/expirable-cache/v2"
 	"golang.org/x/exp/slog"
 )
 
@@ -27,6 +28,9 @@ func NewService(lg *slog.Logger, cl *http.Client, chatGPT *ChatGPT, extractor Ex
 		extractor: extractor,
 	}
 }
+
+// GPTCacheStat returns cache stats.
+func (s *Service) GPTCacheStat() cache.Stats { return s.chatGPT.CacheStat() }
 
 // GetArticle shortens article.
 func (s *Service) GetArticle(ctx context.Context, u string) (store.Article, error) {

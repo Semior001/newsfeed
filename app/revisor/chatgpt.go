@@ -56,6 +56,9 @@ const maxRequestTokens = 4097
 // ErrTooManyTokens is returned when article is too long.
 var ErrTooManyTokens = fmt.Errorf("too many tokens")
 
+// CacheStat returns cache stats.
+func (s *ChatGPT) CacheStat() cache.Stats { return s.cache.Stat() }
+
 // BulletPoints shortens article.
 func (s *ChatGPT) BulletPoints(ctx context.Context, article store.Article) (string, error) {
 	if resp, ok := s.cache.Get(article.URL); ok {
