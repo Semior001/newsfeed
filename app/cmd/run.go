@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/Semior001/newsfeed/app/bot"
@@ -74,10 +75,21 @@ func (r Run) Execute(_ []string) error {
 		Workers:   10,
 	})
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer stop()
+	ctx, stop := context.WithCancel(context.Background())
 
 	ewg, ctx := errgroup.WithContext(ctx)
+	ewg.Go(func() error {
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+		select {
+		case sig := <-sig:
+			slog.Warn("caught signal, stopping", slog.String("signal", sig.String()))
+			stop()
+			return ctx.Err()
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	})
 	ewg.Go(func() error {
 		if err := b.Run(ctx); err != nil {
 			return fmt.Errorf("bot stopped, reason: %w", err)
@@ -91,11 +103,7 @@ func (r Run) Execute(_ []string) error {
 		return nil
 	})
 
-	if err := ewg.Wait(); err != nil {
-		if errors.Is(err, context.Canceled) {
-			return nil
-		}
-
+	if err := ewg.Wait(); err != nil && !errors.Is(err, context.Canceled) {
 		return err
 	}
 

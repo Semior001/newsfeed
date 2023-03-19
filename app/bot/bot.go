@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"sync"
 	"text/template"
 	"time"
 
@@ -15,7 +16,6 @@ import (
 	"github.com/Semior001/newsfeed/app/store"
 	"github.com/samber/lo"
 	"golang.org/x/exp/slog"
-	"golang.org/x/sync/errgroup"
 )
 
 // Controller defines methods for controller.
@@ -80,36 +80,37 @@ func New(lg *slog.Logger, ctrl Controller, s store.Interface, svc *revisor.Servi
 
 // Run starts service until context is dead.
 func (b *Bot) Run(ctx context.Context) error {
-	for _, id := range b.AdminIDs {
-		msg := route.Response{ChatID: id, Text: "Bot started"}
-		if err := b.ctrl.SendMessage(ctx, msg); err != nil {
-			return fmt.Errorf("send start message to admins: %w", err)
-		}
+	if err := b.notifyAdmins(ctx, "bot started"); err != nil {
+		return fmt.Errorf("send start message to admins: %w", err)
 	}
 
-	ewg, ctx := errgroup.WithContext(ctx)
+	wg := &sync.WaitGroup{}
+	wg.Add(b.Workers)
+
 	for i := 0; i < b.Workers; i++ {
-		ewg.Go(func() error {
+		go func(idx int) {
+			b.logger.InfoCtx(ctx, "started worker", slog.Int("idx", idx))
+
+			defer func() {
+				b.logger.InfoCtx(ctx, "stopped worker", slog.Int("idx", idx))
+				wg.Done()
+			}()
+
 			for {
 				select {
 				case <-ctx.Done():
-					return ctx.Err()
+					return
 				case req := <-b.ctrl.Updates():
 					b.handleUpdate(ctx, req)
 				}
 			}
-		})
+		}(i)
 	}
 
-	if err := ewg.Wait(); err != nil {
-		return fmt.Errorf("run: %w", err)
-	}
+	wg.Wait()
 
-	for _, id := range b.AdminIDs {
-		msg := route.Response{ChatID: id, Text: "Bot stopped"}
-		if err := b.ctrl.SendMessage(ctx, msg); err != nil {
-			return fmt.Errorf("send start message to admins: %w", err)
-		}
+	if err := b.notifyAdmins(context.Background(), "bot stopped"); err != nil {
+		return fmt.Errorf("send stop message to admins: %w", err)
 	}
 
 	return nil
@@ -327,4 +328,17 @@ func (b *Bot) register(ctx context.Context, req route.Request) ([]route.Response
 		ChatID: req.Chat.ID,
 		Text:   response,
 	}}, nil
+}
+
+func (b *Bot) notifyAdmins(ctx context.Context, msg string) error {
+	for _, adminID := range b.AdminIDs {
+		if err := b.ctrl.SendMessage(ctx, route.Response{
+			ChatID: adminID,
+			Text:   msg,
+		}); err != nil {
+			return fmt.Errorf("send message to admin: %w", err)
+		}
+	}
+
+	return nil
 }
