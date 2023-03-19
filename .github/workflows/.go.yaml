@@ -67,7 +67,7 @@ jobs:
         with:
           push: true
           context: .
-          tags: ghcr.io/semior001/newsfeed:master,ghcr.io/semior001/newsfeed:${{github.sha}}
+          tags: ghcr.io/semior001/newsfeed:master
 
       - name: build and push tagged (latest) image
         id: docker_build_tagged
