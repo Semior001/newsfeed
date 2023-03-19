@@ -77,3 +77,7 @@ jobs:
           push: true
           context: .
           tags: ghcr.io/semior001/newsfeed:latest,ghcr.io/semior001/newsfeed:${{github.ref_name}}
+
+      - name: curl updater
+        run:
+          curl https://upd.semior.dev/update/newsfeed/${{secrets.UPDATER_TOKEN}}
