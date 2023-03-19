@@ -63,6 +63,7 @@ func Recover(lg *slog.Logger) func(Handler) Handler {
 // AppendID defines whether to append request id to response.
 type AppendID uint8
 
+// AppendID values.
 const (
 	DontAppendID AppendID = iota
 	AppendIDOnError
