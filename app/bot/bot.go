@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/Semior001/newsfeed/app/bot/route"
+	"github.com/Semior001/newsfeed/app/logging"
 	"github.com/Semior001/newsfeed/app/revisor"
 	"github.com/Semior001/newsfeed/app/store"
 	"github.com/samber/lo"
@@ -62,7 +63,7 @@ func New(lg *slog.Logger, ctrl Controller, s store.Interface, svc *revisor.Servi
 		})),
 	})
 
-	rtr = route.RequestID(
+	rtr = route.RequestID(false)(
 		route.Recover(lg)(
 			route.Logger(lg)(rtr),
 		),
@@ -97,13 +98,15 @@ func (b *Bot) Run(ctx context.Context) error {
 }
 
 func (b *Bot) handleUpdate(ctx context.Context, req route.Request) {
+	reqID, _ := logging.RequestIDFromContext(ctx)
+
 	resps, err := b.h(ctx, req)
 	if err != nil {
 		b.logger.WarnCtx(ctx, "failed to handle request", slog.Any("err", err))
 
 		resp := route.Response{
 			ChatID: req.Chat.ID,
-			Text:   "Something went wrong, please ask admin for help.",
+			Text:   fmt.Sprintf("Something went wrong, please ask admin for help.\n\nRequest ID: %s", reqID),
 		}
 
 		if err = b.ctrl.SendMessage(ctx, resp); err != nil {

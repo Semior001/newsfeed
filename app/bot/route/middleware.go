@@ -2,6 +2,7 @@ package route
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Semior001/newsfeed/app/logging"
 	"github.com/google/uuid"
@@ -60,10 +61,23 @@ func Recover(lg *slog.Logger) func(Handler) Handler {
 }
 
 // RequestID is a middleware that adds request id to context.
-func RequestID(next Handler) Handler {
-	return func(ctx context.Context, req Request) ([]Response, error) {
-		id := uuid.New().String()
-		ctx = logging.ContextWithRequestID(ctx, id)
-		return next(ctx, req)
+func RequestID(appendID bool) func(next Handler) Handler {
+	return func(next Handler) Handler {
+		return func(ctx context.Context, req Request) ([]Response, error) {
+			id := uuid.New().String()
+			ctx = logging.ContextWithRequestID(ctx, id)
+
+			resps, err := next(ctx, req)
+
+			if appendID {
+				if reqID, ok := logging.RequestIDFromContext(ctx); ok {
+					for i := range resps {
+						resps[i].Text += fmt.Sprintf("\n\nRequest ID: %s", reqID)
+					}
+				}
+			}
+
+			return resps, err
+		}
 	}
 }

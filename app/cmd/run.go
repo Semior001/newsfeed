@@ -37,7 +37,7 @@ type Run struct {
 func (r Run) Execute(_ []string) error {
 	lg := slog.Default()
 
-	ctrl, err := bot.NewTelegram(lg.WithGroup("telegram"), r.Telegram.Token)
+	ctrl, err := bot.NewTelegram(lg.With(slog.String("prefix", "telegram")), r.Telegram.Token)
 	if err != nil {
 		return fmt.Errorf("make telegram controller: %w", err)
 	}
@@ -50,7 +50,7 @@ func (r Run) Execute(_ []string) error {
 	httpCl := &http.Client{Timeout: r.Timeout}
 
 	chatGPT := revisor.NewChatGPT(
-		lg.WithGroup("chatgpt"),
+		lg.With(slog.String("prefix", "chatgpt")),
 		&http.Client{Timeout: r.OpenAI.Timeout},
 		r.OpenAI.Token,
 		r.OpenAI.MaxTokens,
@@ -59,7 +59,7 @@ func (r Run) Execute(_ []string) error {
 	extractor := revisor.NewExtractor()
 
 	svc := revisor.NewService(
-		lg.WithGroup("revisor"),
+		lg.With(slog.String("prefix", "revisor")),
 		httpCl,
 		chatGPT,
 		extractor,
