@@ -6,6 +6,15 @@ import "context"
 // Handler handles requests.
 type Handler func(ctx context.Context, req Request) ([]Response, error)
 
+// With returns a new handler with middleware applied.
+func (h Handler) With(mvs ...func(Handler) Handler) Handler {
+	base := h
+	for i := len(mvs) - 1; i >= 0; i-- {
+		base = mvs[i](base)
+	}
+	return base
+}
+
 // Response is a response from handler.
 type Response struct {
 	ReplyToMessageID string

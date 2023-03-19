@@ -54,26 +54,21 @@ func New(lg *slog.Logger, ctrl Controller, s store.Interface, svc *revisor.Servi
 		Params: params,
 	}
 
-	rtr := route.Router(map[string]route.Handler{
-		"": bot.ensureAuthorized(route.Router(map[string]route.Handler{
-			"":        bot.article,
-			"/start":  bot.start,
-			"/stop":   bot.stop,
-			"/list":   bot.ensureAdmin(bot.list),
-			"/delete": bot.ensureAdmin(bot.delete),
-			"/cache":  bot.ensureAdmin(bot.cacheStats),
-		})),
-	})
+	rtr := bot.ensureAuthorized(route.Router(map[string]route.Handler{
+		"":        bot.article,
+		"/start":  bot.start,
+		"/stop":   bot.stop,
+		"/list":   bot.ensureAdmin(bot.list),
+		"/delete": bot.ensureAdmin(bot.delete),
+		"/cache":  bot.ensureAdmin(bot.cacheStats),
+	}))
 
-	rtr = route.RequestID()(
-		route.AppendRequestIDOnError()(
-			route.Recover(lg)(
-				route.Logger(lg)(rtr),
-			),
-		),
+	bot.h = rtr.With(
+		route.RequestID,
+		route.AppendRequestIDOnError,
+		route.Recover(lg),
+		route.Logger(lg),
 	)
-
-	bot.h = rtr
 
 	return bot
 }
