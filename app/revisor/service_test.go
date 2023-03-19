@@ -49,7 +49,7 @@ func TestService_GetArticle(t *testing.T) {
 					}, nil
 				},
 			},
-			maxTokens: 1000,
+			maxResponseTokens: 1000,
 		},
 		extractor: Extractor{},
 	}

@@ -26,28 +26,27 @@ type OpenAIClient interface {
 
 // ChatGPT is a client to make requests to OpenAI chatgpt service.
 type ChatGPT struct {
-	log       *slog.Logger
-	cl        OpenAIClient
-	maxTokens int
+	log               *slog.Logger
+	cl                OpenAIClient
+	maxResponseTokens int
 }
 
 // NewChatGPT creates new ChatGPT client.
-func NewChatGPT(lg *slog.Logger, cl *http.Client, token string, maxTokens int) *ChatGPT {
+func NewChatGPT(lg *slog.Logger, cl *http.Client, token string, maxResponseTokens int) *ChatGPT {
 	config := openai.DefaultConfig(token)
 	config.HTTPClient = cl
 
 	client := openai.NewClientWithConfig(config)
 
 	return &ChatGPT{
-		log:       lg,
-		cl:        &loggingClient{log: lg, cl: client},
-		maxTokens: maxTokens,
+		log:               lg,
+		cl:                &loggingClient{log: lg, cl: client},
+		maxResponseTokens: maxResponseTokens,
 	}
 }
 
-// maxTokens is a maximum number of tokens that can be sent to OpenAI.
-//nolint:unused
-const maxTokens = 4097
+// maxRequestTokens is a maximum number of tokens that can be sent to OpenAI.
+const maxRequestTokens = 4097
 
 // ErrTooManyTokens is returned when article is too long.
 var ErrTooManyTokens = fmt.Errorf("too many tokens")
@@ -61,13 +60,13 @@ func (s *ChatGPT) BulletPoints(ctx context.Context, article store.Article) (stri
 	}
 
 	totalTokens := strings.Count(buf.String(), " ") + 1
-	if totalTokens > s.maxTokens {
+	if totalTokens > maxRequestTokens {
 		return "", ErrTooManyTokens
 	}
 
 	req := openai.ChatCompletionRequest{
 		Model:     openai.GPT3Dot5Turbo,
-		MaxTokens: s.maxTokens,
+		MaxTokens: s.maxResponseTokens,
 		Messages: []openai.ChatCompletionMessage{
 			{Role: openai.ChatMessageRoleUser, Content: buf.String()},
 		},

@@ -40,7 +40,7 @@ func TestChatGPT_Shorten(t *testing.T) {
 				}, nil
 			},
 		},
-		maxTokens: 1000,
+		maxResponseTokens: 1000,
 	}
 
 	var article store.Article
