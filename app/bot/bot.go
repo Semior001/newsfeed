@@ -79,6 +79,13 @@ func New(lg *slog.Logger, ctrl Controller, s store.Interface, svc *revisor.Servi
 
 // Run starts service until context is dead.
 func (b *Bot) Run(ctx context.Context) error {
+	for _, id := range b.AdminIDs {
+		msg := route.Response{ChatID: id, Text: "Bot started"}
+		if err := b.ctrl.SendMessage(ctx, msg); err != nil {
+			return fmt.Errorf("send start message to admins: %w", err)
+		}
+	}
+
 	ewg, ctx := errgroup.WithContext(ctx)
 	for i := 0; i < b.Workers; i++ {
 		ewg.Go(func() error {
@@ -95,6 +102,13 @@ func (b *Bot) Run(ctx context.Context) error {
 
 	if err := ewg.Wait(); err != nil {
 		return fmt.Errorf("run: %w", err)
+	}
+
+	for _, id := range b.AdminIDs {
+		msg := route.Response{ChatID: id, Text: "Bot stopped"}
+		if err := b.ctrl.SendMessage(ctx, msg); err != nil {
+			return fmt.Errorf("send start message to admins: %w", err)
+		}
 	}
 
 	return nil
