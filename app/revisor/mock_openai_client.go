@@ -5,9 +5,8 @@ package revisor
 
 import (
 	"context"
-	"sync"
-
 	"github.com/sashabaranov/go-openai"
+	"sync"
 )
 
 // Ensure, that OpenAIClientMock does implement OpenAIClient.
