@@ -4,22 +4,25 @@ a bot that sends news from the feed in a compressed format
 ## options
 ```
 Application Options:
-      --json-logs              turn on json logs [$JSON_LOGS]
-      --dbg                    turn on debug mode [$DEBUG]
+      --json-logs                      turn on json logs [$JSON_LOGS]
+      --dbg                            turn on debug mode [$DEBUG]
 
 Help Options:
-  -h, --help                   Show this help message
+  -h, --help                           Show this help message
 
 [run command options]
-          --timeout=           timeout for http calls to articles (default: 5s) [$TIMEOUT]
-          --admin-ids=         admin IDs [$ADMIN_IDS]
-          --auth-token=        token for authorizing requests [$AUTH_TOKEN]
-          --store-path=        parent dir for bolt files [$STORE_PATH]
+          --store-path=                parent dir for bolt files [$STORE_PATH]
+
+    bot:
+          --bot.timeout=               timeout for requests (default: 6m) [$BOT_TIMEOUT]
+          --bot.admin-ids=             admin IDs [$BOT_ADMIN_IDS]
+          --bot.auth-token=            token for authorizing requests [$BOT_AUTH_TOKEN]
 
     telegram:
-          --telegram.token=    telegram token [$TELEGRAM_TOKEN]
+          --bot.telegram.token=        telegram token [$BOT_TELEGRAM_TOKEN]
 
     openai:
-          --openai.token=      OpenAI token [$OPENAI_TOKEN]
-          --openai.max-tokens= max tokens for OpenAI (default: 1000) [$OPENAI_MAX_TOKENS]
+          --revisor.openai.token=      OpenAI token [$REVISOR_OPENAI_TOKEN]
+          --revisor.openai.max-tokens= max tokens for OpenAI (default: 1000) [$REVISOR_OPENAI_MAX_TOKENS]
+          --revisor.openai.timeout=    timeout for OpenAI calls (default: 5m) [$REVISOR_OPENAI_TIMEOUT]
 ```
