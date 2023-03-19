@@ -83,9 +83,7 @@ func (b *Bot) Run(ctx context.Context) error {
 				case <-ctx.Done():
 					return ctx.Err()
 				case req := <-b.ctrl.Updates():
-					if err := b.handleUpdate(ctx, req); err != nil {
-						b.logger.ErrorCtx(ctx, "handle request: %v", err)
-					}
+					b.handleUpdate(ctx, req)
 				}
 			}
 		})
@@ -98,7 +96,7 @@ func (b *Bot) Run(ctx context.Context) error {
 	return nil
 }
 
-func (b *Bot) handleUpdate(ctx context.Context, req route.Request) error {
+func (b *Bot) handleUpdate(ctx context.Context, req route.Request) {
 	resps, err := b.h(ctx, req)
 	if err != nil {
 		b.logger.WarnCtx(ctx, "failed to handle request", slog.Any("err", err))
@@ -111,8 +109,6 @@ func (b *Bot) handleUpdate(ctx context.Context, req route.Request) error {
 		if err = b.ctrl.SendMessage(ctx, resp); err != nil {
 			b.logger.WarnCtx(ctx, "failed to send message", slog.Any("err", err))
 		}
-
-		return nil
 	}
 
 	for _, resp := range resps {
@@ -120,8 +116,6 @@ func (b *Bot) handleUpdate(ctx context.Context, req route.Request) error {
 			b.logger.WarnCtx(ctx, "failed to send message", slog.Any("err", err))
 		}
 	}
-
-	return nil
 }
 
 func (b *Bot) start(ctx context.Context, req route.Request) ([]route.Response, error) {

@@ -1,3 +1,4 @@
+// Package logging contains logging middleware for request id.
 package logging
 
 import (
