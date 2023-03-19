@@ -219,6 +219,13 @@ func (b *Bot) article(ctx context.Context, req route.Request) ([]route.Response,
 
 	article, err := b.svc.GetArticle(ctx, req.Text)
 	if err != nil {
+		if errors.Is(err, revisor.ErrTooManyTokens) {
+			return []route.Response{{
+				ChatID: req.Chat.ID,
+				Text: "Article you provided is too long, I can't summarize it.\n" +
+					"Article content should be less than 4000 words.",
+			}}, nil
+		}
 		return nil, fmt.Errorf("get article: %w", err)
 	}
 

@@ -49,12 +49,20 @@ func NewChatGPT(lg *slog.Logger, cl *http.Client, token string, maxTokens int) *
 //nolint:unused
 const maxTokens = 4097
 
+// ErrTooManyTokens is returned when article is too long.
+var ErrTooManyTokens = fmt.Errorf("too many tokens")
+
 // BulletPoints shortens article.
 func (s *ChatGPT) BulletPoints(ctx context.Context, article store.Article) (string, error) {
 	buf := &strings.Builder{}
 
 	if err := promptTmpl.Execute(buf, article); err != nil {
 		return "", fmt.Errorf("build request: %w", err)
+	}
+
+	totalTokens := strings.Count(buf.String(), " ") + 1
+	if totalTokens > s.maxTokens {
+		return "", ErrTooManyTokens
 	}
 
 	req := openai.ChatCompletionRequest{
