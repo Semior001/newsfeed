@@ -82,7 +82,11 @@ func (b *Telegram) SendMessage(ctx context.Context, resp route.Response) error {
 		return fmt.Errorf("parse chat id: %w", err)
 	}
 
-	if _, err = b.api.Send(tgbotapi.NewMessage(chatID, resp.Text)); err != nil {
+	msg := tgbotapi.NewMessage(chatID, resp.Text)
+	msg.ParseMode = tgbotapi.ModeMarkdown
+	msg.DisableWebPagePreview = true
+
+	if _, err = b.api.Send(msg); err != nil {
 		return fmt.Errorf("send message: %w", err)
 	}
 

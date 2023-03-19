@@ -40,7 +40,7 @@ func NewChatGPT(lg *slog.Logger, cl *http.Client, token string, maxTokens int) *
 
 	return &ChatGPT{
 		log:       lg,
-		cl:        client,
+		cl:        &loggingClient{log: lg, cl: client},
 		maxTokens: maxTokens,
 	}
 }
@@ -61,8 +61,6 @@ func (s *ChatGPT) BulletPoints(ctx context.Context, article store.Article) (stri
 		},
 	}
 
-	s.log.DebugCtx(ctx, "sending request to OpenAI", slog.Any("request", req))
-
 	resp, err := s.cl.CreateChatCompletion(ctx, req)
 	if err != nil {
 		return "", fmt.Errorf("create chat completion: %w", err)
@@ -73,4 +71,19 @@ func (s *ChatGPT) BulletPoints(ctx context.Context, article store.Article) (stri
 	}
 
 	return resp.Choices[0].Message.Content, nil
+}
+
+type loggingClient struct {
+	log *slog.Logger
+	cl  OpenAIClient
+}
+
+func (l *loggingClient) CreateChatCompletion(
+	ctx context.Context,
+	req openai.ChatCompletionRequest,
+) (openai.ChatCompletionResponse, error) {
+	l.log.DebugCtx(ctx, "sending request to chatGPT")
+	resp, err := l.cl.CreateChatCompletion(ctx, req)
+	l.log.DebugCtx(ctx, "response received from chatGPT")
+	return resp, err
 }

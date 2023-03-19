@@ -2,8 +2,10 @@ package route
 
 import (
 	"context"
-	"time"
 
+	"github.com/Semior001/newsfeed/app/logging"
+	"github.com/google/uuid"
+	"github.com/samber/lo"
 	"golang.org/x/exp/slog"
 )
 
@@ -11,23 +13,30 @@ import (
 func Logger(lg *slog.Logger) func(Handler) Handler {
 	return func(next Handler) Handler {
 		return func(ctx context.Context, req Request) ([]Response, error) {
-			start := time.Now()
+			args := []any{
+				slog.String("chat_id", req.Chat.ID),
+				slog.String("chat_username", req.Chat.Username),
+			}
+
+			if lg.Handler().Enabled(ctx, slog.LevelDebug) {
+				lg.DebugCtx(ctx, "request received", append(args, slog.String("command", req.Text))...)
+			} else {
+				lg.InfoCtx(ctx, "request received", args...)
+			}
 
 			res, err := next(ctx, req)
 			if err != nil {
 				return nil, err
 			}
 
-			args := []any{
-				slog.String("chat_id", req.Chat.ID),
-				slog.String("chat_username", req.Chat.Username),
-				slog.Duration("duration", time.Since(start)),
-			}
-
 			if lg.Handler().Enabled(ctx, slog.LevelDebug) {
-				lg.DebugCtx(ctx, "request processed", append(args, slog.String("command", req.Text))...)
+				lg.DebugCtx(ctx, "request processed", slog.Any("responses", res))
 			} else {
-				lg.InfoCtx(ctx, "request processed", args...)
+				lg.InfoCtx(ctx, "request processed",
+					slog.Any("responses", lo.Map(res, func(r Response, _ int) Response {
+						return Response{ChatID: r.ChatID}
+					})),
+				)
 			}
 
 			return res, nil
@@ -50,10 +59,11 @@ func Recover(lg *slog.Logger) func(Handler) Handler {
 	}
 }
 
-type requestIDKey struct{}
-
-// RequestIDFromContext returns request id from context.
-func RequestIDFromContext(ctx context.Context) (string, bool) {
-	v, ok := ctx.Value(requestIDKey{}).(string)
-	return v, ok
+// RequestID is a middleware that adds request id to context.
+func RequestID(next Handler) Handler {
+	return func(ctx context.Context, req Request) ([]Response, error) {
+		id := uuid.New().String()
+		ctx = logging.ContextWithRequestID(ctx, id)
+		return next(ctx, req)
+	}
 }

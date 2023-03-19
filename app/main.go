@@ -7,6 +7,7 @@ import (
 	"runtime/debug"
 
 	"github.com/Semior001/newsfeed/app/cmd"
+	"github.com/Semior001/newsfeed/app/logging"
 	"github.com/jessevdk/go-flags"
 	"golang.org/x/exp/slog"
 )
@@ -65,12 +66,12 @@ func setupLog() {
 		handler.AddSource = true
 	}
 
+	h := slog.Handler(handler.NewTextHandler(os.Stderr))
+
 	if opts.JSONLogs {
-		lg := slog.New(handler.NewJSONHandler(os.Stderr))
-		slog.SetDefault(lg)
-		return
+		h = handler.NewJSONHandler(os.Stderr)
 	}
 
-	lg := slog.New(handler.NewTextHandler(os.Stderr))
+	lg := slog.New(logging.Handler{Handler: h})
 	slog.SetDefault(lg)
 }

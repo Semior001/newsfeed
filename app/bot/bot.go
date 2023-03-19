@@ -62,8 +62,10 @@ func New(lg *slog.Logger, ctrl Controller, s store.Interface, svc *revisor.Servi
 		})),
 	})
 
-	rtr = route.Recover(lg)(
-		route.Logger(lg)(rtr),
+	rtr = route.RequestID(
+		route.Recover(lg)(
+			route.Logger(lg)(rtr),
+		),
 	)
 
 	bot.h = rtr
@@ -81,26 +83,8 @@ func (b *Bot) Run(ctx context.Context) error {
 				case <-ctx.Done():
 					return ctx.Err()
 				case req := <-b.ctrl.Updates():
-					resps, err := b.h(ctx, req)
-					if err != nil {
-						b.logger.WarnCtx(ctx, "failed to handle request", slog.Any("err", err))
-
-						resp := route.Response{
-							ChatID: req.Chat.ID,
-							Text:   "Something went wrong, please ask admin for help.",
-						}
-
-						if err = b.ctrl.SendMessage(ctx, resp); err != nil {
-							b.logger.WarnCtx(ctx, "failed to send message", slog.Any("err", err))
-						}
-
-						return nil
-					}
-
-					for _, resp := range resps {
-						if err := b.ctrl.SendMessage(ctx, resp); err != nil {
-							b.logger.WarnCtx(ctx, "failed to send message", slog.Any("err", err))
-						}
+					if err := b.handleUpdate(ctx, req); err != nil {
+						b.logger.ErrorCtx(ctx, "handle request: %v", err)
 					}
 				}
 			}
@@ -109,6 +93,32 @@ func (b *Bot) Run(ctx context.Context) error {
 
 	if err := ewg.Wait(); err != nil {
 		return fmt.Errorf("run: %w", err)
+	}
+
+	return nil
+}
+
+func (b *Bot) handleUpdate(ctx context.Context, req route.Request) error {
+	resps, err := b.h(ctx, req)
+	if err != nil {
+		b.logger.WarnCtx(ctx, "failed to handle request", slog.Any("err", err))
+
+		resp := route.Response{
+			ChatID: req.Chat.ID,
+			Text:   "Something went wrong, please ask admin for help.",
+		}
+
+		if err = b.ctrl.SendMessage(ctx, resp); err != nil {
+			b.logger.WarnCtx(ctx, "failed to send message", slog.Any("err", err))
+		}
+
+		return nil
+	}
+
+	for _, resp := range resps {
+		if err := b.ctrl.SendMessage(ctx, resp); err != nil {
+			b.logger.WarnCtx(ctx, "failed to send message", slog.Any("err", err))
+		}
 	}
 
 	return nil
@@ -185,8 +195,11 @@ func (b *Bot) delete(ctx context.Context, req route.Request) ([]route.Response, 
 }
 
 var articleMessageTmpl = template.Must(template.New("articleMessage").Parse(`
-**[{{.Title}}]({{.URL}}) by {{.Author}}**
+*{{.Title}} by {{.Author}}*
+
 {{.BulletPoints}}
+
+[source]({{.URL}})
 `))
 
 func (b *Bot) article(ctx context.Context, req route.Request) ([]route.Response, error) {
