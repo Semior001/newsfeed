@@ -1,4 +1,4 @@
-# newsfeed
+# newsfeed [![build](https://github.com/Semior001/newsfeed/actions/workflows/.go.yaml/badge.svg)](https://github.com/Semior001/newsfeed/actions/workflows/.go.yaml) [![codecov](https://codecov.io/gh/Semior001/newsfeed/branch/master/graph/badge.svg?token=0MAV99RJ1C)](https://codecov.io/gh/Semior001/newsfeed)
 a bot that sends news from the feed in a compressed format
 
 ## options
