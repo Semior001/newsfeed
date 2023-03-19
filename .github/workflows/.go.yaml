@@ -32,10 +32,14 @@ jobs:
           CGO_ENABLED: 0
 
       - name: run golangci-lint
-        uses: golangci/golangci-lint-action@v2
+        uses: golangci/golangci-lint-action@v3
         with:
           version: v1.51.2
-          skip-go-installation: true
+          working-directory: app
+          args: --timeout 5m
+          skip-cache: true
+          skip-pkg-cache: true
+          skip-build-cache: true
 
       - name: submit coverage to codecov
         run: |
