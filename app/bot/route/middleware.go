@@ -26,21 +26,20 @@ func Logger(lg *slog.Logger) func(Handler) Handler {
 			}
 
 			res, err := next(ctx, req)
-			if err != nil {
-				return nil, err
-			}
 
 			if lg.Handler().Enabled(ctx, slog.LevelDebug) {
-				lg.DebugCtx(ctx, "request processed", slog.Any("responses", res))
-			} else {
-				lg.InfoCtx(ctx, "request processed",
-					slog.Any("responses", lo.Map(res, func(r Response, _ int) Response {
-						return Response{ChatID: r.ChatID}
-					})),
-				)
+				lg.DebugCtx(ctx, "request processed", slog.Any("responses", res), slog.Any("err", err))
+				return res, err
 			}
 
-			return res, nil
+			lg.InfoCtx(ctx, "request processed",
+				slog.Any("responses", lo.Map(res, func(r Response, _ int) Response {
+					return Response{ChatID: r.ChatID}
+				})),
+				slog.Any("err", err),
+			)
+
+			return res, err
 		}
 	}
 }
@@ -75,8 +74,8 @@ func RequestID() func(Handler) Handler {
 // AppendRequestIDOnError is a middleware that responds with error message.
 func AppendRequestIDOnError() func(Handler) Handler {
 	return func(next Handler) Handler {
-		return func(ctx context.Context, req Request) ([]Response, error) {
-			resps, err := next(ctx, req)
+		return func(ctx context.Context, req Request) (resps []Response, err error) {
+			resps, err = next(ctx, req)
 			if err == nil {
 				return resps, nil
 			}
@@ -100,7 +99,7 @@ func AppendRequestIDOnError() func(Handler) Handler {
 				})
 			}
 
-			return resps, nil
+			return resps, err
 		}
 	}
 }
