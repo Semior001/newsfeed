@@ -63,6 +63,12 @@ func (r Run) Execute(_ []string) error {
 		return fmt.Errorf("make store: %w", err)
 	}
 
+	defer func() {
+		if err := s.Close(); err != nil {
+			lg.Error("close bolt store", slog.Any("err", err))
+		}
+	}()
+
 	ctrl, err := bot.NewTelegram(lg.With(slog.String("prefix", "telegram")), r.Bot.Telegram.Token)
 	if err != nil {
 		return fmt.Errorf("make telegram controller: %w", err)
