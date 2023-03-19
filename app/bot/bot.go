@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/Semior001/newsfeed/app/bot/route"
 	"github.com/Semior001/newsfeed/app/logging"
@@ -41,6 +42,7 @@ type Params struct {
 	AdminIDs  []string
 	AuthToken string
 	Workers   int
+	Timeout   time.Duration
 }
 
 // New creates new service.
@@ -98,6 +100,12 @@ func (b *Bot) Run(ctx context.Context) error {
 }
 
 func (b *Bot) handleUpdate(ctx context.Context, req route.Request) {
+	if b.Timeout > 0 {
+		var cancel func()
+		ctx, cancel = context.WithTimeout(ctx, b.Timeout)
+		defer cancel()
+	}
+
 	reqID, _ := logging.RequestIDFromContext(ctx)
 
 	resps, err := b.h(ctx, req)

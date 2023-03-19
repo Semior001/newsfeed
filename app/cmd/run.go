@@ -19,60 +19,63 @@ import (
 
 // Run is a command to run the bot.
 type Run struct {
-	Timeout  time.Duration `long:"timeout" env:"TIMEOUT" default:"5s" description:"timeout for http calls to articles"`
-	Telegram struct {
-		Token string `long:"token" env:"TOKEN" description:"telegram token"`
-	} `group:"telegram" namespace:"telegram" env-namespace:"TELEGRAM"`
-	OpenAI struct {
-		Token     string        `long:"token" env:"TOKEN" description:"OpenAI token"`
-		MaxTokens int           `long:"max-tokens" env:"MAX_TOKENS" default:"1000" description:"max tokens for OpenAI"`
-		Timeout   time.Duration `long:"timeout" env:"TIMEOUT" default:"5m" description:"timeout for OpenAI calls"`
-	} `group:"openai" namespace:"openai" env-namespace:"OPENAI"`
-	AdminIDs  []string `long:"admin-ids" env:"ADMIN_IDS" description:"admin IDs"`
-	AuthToken string   `long:"auth-token" env:"AUTH_TOKEN" description:"token for authorizing requests"`
-	StorePath string   `long:"store-path" env:"STORE_PATH" description:"parent dir for bolt files"`
+	Bot struct {
+		Timeout time.Duration `long:"timeout" env:"TIMEOUT" default:"6m" description:"timeout for requests"`
+
+		Telegram struct {
+			Token string `long:"token" env:"TOKEN" description:"telegram token"`
+		} `group:"telegram" namespace:"telegram" env-namespace:"TELEGRAM"`
+
+		AdminIDs  []string `long:"admin-ids" env:"ADMIN_IDS" description:"admin IDs"`
+		AuthToken string   `long:"auth-token" env:"AUTH_TOKEN" description:"token for authorizing requests"`
+	} `group:"bot" namespace:"bot" env-namespace:"BOT"`
+
+	Revisor struct {
+		OpenAI struct {
+			Token     string        `long:"token" env:"TOKEN" description:"OpenAI token"`
+			MaxTokens int           `long:"max-tokens" env:"MAX_TOKENS" default:"1000" description:"max tokens for OpenAI"`
+			Timeout   time.Duration `long:"timeout" env:"TIMEOUT" default:"5m" description:"timeout for OpenAI calls"`
+		} `group:"openai" namespace:"openai" env-namespace:"OPENAI"`
+	} `group:"revisor" namespace:"revisor" env-namespace:"REVISOR"`
+
+	StorePath string `long:"store-path" env:"STORE_PATH" description:"parent dir for bolt files"`
 }
 
 // Execute runs the command.
 func (r Run) Execute(_ []string) error {
 	lg := slog.Default()
 
-	ctrl, err := bot.NewTelegram(lg.With(slog.String("prefix", "telegram")), r.Telegram.Token)
-	if err != nil {
-		return fmt.Errorf("make telegram controller: %w", err)
-	}
+	rev := revisor.NewService(
+		lg.With(slog.String("prefix", "revisor")),
+		&http.Client{Timeout: 5 * time.Second},
+		revisor.NewChatGPT(
+			lg.With(slog.String("prefix", "chatgpt")),
+			&http.Client{Timeout: r.Revisor.OpenAI.Timeout},
+			r.Revisor.OpenAI.Token,
+			r.Revisor.OpenAI.MaxTokens,
+		),
+		revisor.NewExtractor(),
+	)
 
 	s, err := store.NewBolt(r.StorePath)
 	if err != nil {
 		return fmt.Errorf("make store: %w", err)
 	}
 
-	httpCl := &http.Client{Timeout: r.Timeout}
+	ctrl, err := bot.NewTelegram(lg.With(slog.String("prefix", "telegram")), r.Bot.Telegram.Token)
+	if err != nil {
+		return fmt.Errorf("make telegram controller: %w", err)
+	}
 
-	chatGPT := revisor.NewChatGPT(
-		lg.With(slog.String("prefix", "chatgpt")),
-		&http.Client{Timeout: r.OpenAI.Timeout},
-		r.OpenAI.Token,
-		r.OpenAI.MaxTokens,
-	)
-
-	extractor := revisor.NewExtractor()
-
-	svc := revisor.NewService(
-		lg.With(slog.String("prefix", "revisor")),
-		httpCl,
-		chatGPT,
-		extractor,
-	)
+	b := bot.New(lg, ctrl, s, rev, bot.Params{
+		AdminIDs:  r.Bot.AdminIDs,
+		AuthToken: r.Bot.AuthToken,
+		Timeout:   r.Bot.Timeout,
+		Workers:   10,
+	})
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
-
-	b := bot.New(lg, ctrl, s, svc, bot.Params{
-		AdminIDs:  r.AdminIDs,
-		AuthToken: r.AuthToken,
-		Workers:   10,
-	})
 
 	ewg, ctx := errgroup.WithContext(ctx)
 	ewg.Go(func() error {

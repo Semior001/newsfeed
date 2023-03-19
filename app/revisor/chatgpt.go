@@ -45,6 +45,10 @@ func NewChatGPT(lg *slog.Logger, cl *http.Client, token string, maxTokens int) *
 	}
 }
 
+// maxTokens is a maximum number of tokens that can be sent to OpenAI.
+//nolint:unused
+const maxTokens = 4097
+
 // BulletPoints shortens article.
 func (s *ChatGPT) BulletPoints(ctx context.Context, article store.Article) (string, error) {
 	buf := &strings.Builder{}
