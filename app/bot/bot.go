@@ -193,7 +193,9 @@ func (b *Bot) article(ctx context.Context, req route.Request) ([]route.Response,
 	if _, err := url.ParseRequestURI(req.Text); err != nil {
 		return []route.Response{{
 			ChatID: req.Chat.ID,
-			Text:   "I can only accept links to articles.",
+			Text: "I couldn't find any links in your message.\n" +
+				"You can send me a link to any article, in order to test my capability of shortening it.\n" +
+				"But do not overuse it, please, we don't have an unlimited amount of free API calls.",
 		}}, nil
 	}
 
@@ -244,7 +246,9 @@ func (b *Bot) ensureAuthorized(h route.Handler) route.Handler {
 
 				return []route.Response{{
 					ChatID: req.Chat.ID,
-					Text:   "You are now authorized.",
+					Text: "You are now authorized.\n" +
+						"Now, you can send me a link to any article, in order to test my capability of shortening it.\n" +
+						"But do not overuse it, please, we don't have an unlimited amount of free API calls.",
 				}}, nil
 			}
 
