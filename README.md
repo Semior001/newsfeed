@@ -1,4 +1,4 @@
-# newsfeed [![build](https://github.com/Semior001/newsfeed/actions/workflows/.go.yaml/badge.svg)](https://github.com/Semior001/newsfeed/actions/workflows/.go.yaml) [![codecov](https://codecov.io/gh/Semior001/newsfeed/branch/master/graph/badge.svg?token=0MAV99RJ1C)](https://codecov.io/gh/Semior001/newsfeed)
+# newsfeed [![build](https://github.com/Semior001/newsfeed/actions/workflows/.go.yaml/badge.svg)](https://github.com/Semior001/newsfeed/actions/workflows/.go.yaml)  [![go report card](https://goreportcard.com/badge/github.com/semior001/newsfeed)](https://goreportcard.com/report/github.com/semior001/newsfeed) [![PkgGoDev](https://pkg.go.dev/badge/github.com/Semior001/newsfeed)](https://pkg.go.dev/github.com/Semior001/newsfeed) [![codecov](https://codecov.io/gh/Semior001/newsfeed/branch/master/graph/badge.svg?token=HPP92R5JSH)](https://codecov.io/gh/Semior001/newsfeed) 
 a bot that sends news from the feed in a compressed format
 
 ## options

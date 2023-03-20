@@ -23,6 +23,7 @@ var prompt string
 var promptTmpl = template.Must(template.New("prompt").Parse(prompt))
 
 //go:generate moq -out mock_openai_client.go . OpenAIClient
+
 // OpenAIClient is interface for OpenAI client with the possibility to mock it
 type OpenAIClient interface {
 	CreateChatCompletion(context.Context, openai.ChatCompletionRequest) (openai.ChatCompletionResponse, error)
