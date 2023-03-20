@@ -51,7 +51,7 @@ func (r Run) Execute(_ []string) error {
 		&http.Client{Timeout: 5 * time.Second},
 		revisor.NewChatGPT(
 			lg.With(slog.String("prefix", "chatgpt")),
-			&http.Client{Timeout: r.Revisor.OpenAI.Timeout},
+			http.Client{Timeout: r.Revisor.OpenAI.Timeout},
 			r.Revisor.OpenAI.Token,
 			r.Revisor.OpenAI.MaxTokens,
 		),

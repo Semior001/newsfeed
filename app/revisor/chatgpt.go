@@ -9,7 +9,10 @@ import (
 	"text/template"
 
 	"github.com/Semior001/newsfeed/app/store"
+	"github.com/Semior001/newsfeed/pkg/logx"
 	cache "github.com/go-pkgz/expirable-cache/v2"
+	"github.com/go-pkgz/requester"
+	"github.com/go-pkgz/requester/middleware"
 	"github.com/sashabaranov/go-openai"
 	"golang.org/x/exp/slog"
 )
@@ -34,15 +37,23 @@ type ChatGPT struct {
 }
 
 // NewChatGPT creates new ChatGPT client.
-func NewChatGPT(lg *slog.Logger, cl *http.Client, token string, maxResponseTokens int) *ChatGPT {
+func NewChatGPT(lg *slog.Logger, cl http.Client, token string, maxResponseTokens int) *ChatGPT {
+	rstr := requester.New(cl,
+		middleware.MaxConcurrent(3),
+		logx.LoggingRoundTripper(lg, logx.RoundTripperOpts{
+			Level:         slog.LevelDebug,
+			SecretHeaders: []string{"Authorization"},
+		}),
+	)
+
 	config := openai.DefaultConfig(token)
-	config.HTTPClient = cl
+	config.HTTPClient = rstr.Client()
 
 	client := openai.NewClientWithConfig(config)
 
 	return &ChatGPT{
 		log:               lg,
-		cl:                &loggingClient{log: lg, cl: client},
+		cl:                client,
 		maxResponseTokens: maxResponseTokens,
 		cache: cache.NewCache[string, string]().
 			WithLRU().
@@ -96,19 +107,4 @@ func (s *ChatGPT) BulletPoints(ctx context.Context, article store.Article) (stri
 	result := resp.Choices[0].Message.Content
 	s.cache.Set(article.URL, result, 0)
 	return result, nil
-}
-
-type loggingClient struct {
-	log *slog.Logger
-	cl  OpenAIClient
-}
-
-func (l *loggingClient) CreateChatCompletion(
-	ctx context.Context,
-	req openai.ChatCompletionRequest,
-) (openai.ChatCompletionResponse, error) {
-	l.log.DebugCtx(ctx, "sending request to chatGPT")
-	resp, err := l.cl.CreateChatCompletion(ctx, req)
-	l.log.DebugCtx(ctx, "response received from chatGPT")
-	return resp, err
 }

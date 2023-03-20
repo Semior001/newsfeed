@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Semior001/newsfeed/app/logging"
+	"github.com/Semior001/newsfeed/pkg/logx"
 	"github.com/google/uuid"
 	"github.com/samber/lo"
 	"golang.org/x/exp/slog"
@@ -63,7 +63,7 @@ func Recover(lg *slog.Logger) func(Handler) Handler {
 func RequestID(next Handler) Handler {
 	return func(ctx context.Context, req Request) ([]Response, error) {
 		id := uuid.New().String()
-		ctx = logging.ContextWithRequestID(ctx, id)
+		ctx = logx.ContextWithRequestID(ctx, id)
 
 		return next(ctx, req)
 	}
@@ -77,7 +77,7 @@ func AppendRequestIDOnError(next Handler) Handler {
 			return resps, nil
 		}
 
-		reqID, _ := logging.RequestIDFromContext(ctx)
+		reqID, _ := logx.RequestIDFromContext(ctx)
 
 		hasRequester := false
 		for i := range resps {

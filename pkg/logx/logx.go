@@ -1,5 +1,5 @@
-// Package logging contains logging middleware for request id.
-package logging
+// Package logx contains logging middleware for request id.
+package logx
 
 import (
 	"context"

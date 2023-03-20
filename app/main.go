@@ -7,7 +7,7 @@ import (
 	"runtime/debug"
 
 	"github.com/Semior001/newsfeed/app/cmd"
-	"github.com/Semior001/newsfeed/app/logging"
+	"github.com/Semior001/newsfeed/pkg/logx"
 	"github.com/jessevdk/go-flags"
 	"golang.org/x/exp/slog"
 )
@@ -72,11 +72,11 @@ func setupLog() {
 		h = handler.NewJSONHandler(os.Stderr)
 	}
 
-	lg := slog.New(&logging.Chain{
+	lg := slog.New(&logx.Chain{
 		Handler: h,
-		Middleware: []logging.Middleware{
-			logging.RequestID(),
-			logging.StacktraceOnError(),
+		Middleware: []logx.Middleware{
+			logx.RequestID(),
+			logx.StacktraceOnError(),
 		},
 	})
 	slog.SetDefault(lg)
