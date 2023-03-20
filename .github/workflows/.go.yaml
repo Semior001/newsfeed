@@ -90,6 +90,5 @@ jobs:
         with:
           package-name: newsfeed
           package-type: container
-          num-old-versions-to-delete: 5
           min-versions-to-keep: 3
           ignore-versions: "^(master|latest|v[0-9]\\.[0-9]\\.[0-9])$"
