@@ -25,8 +25,6 @@ func NewTelegram(lg *slog.Logger, token string) (*Telegram, error) {
 		return nil, fmt.Errorf("make new api: %w", err)
 	}
 
-	api.Debug = lg.Enabled(context.TODO(), slog.LevelDebug)
-
 	stdlibLogger := slog.NewLogLogger(lg.Handler(), slog.LevelWarn)
 	stdlibLogger.SetPrefix("telegram-bot-api: ")
 
