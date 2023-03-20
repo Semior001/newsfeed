@@ -280,25 +280,25 @@ func (b *Bot) ensureAuthorized(h route.Handler) route.Handler {
 		}
 
 		if !u.Authorized {
-			if req.Text == b.AuthToken {
-				u.Authorized = true
-				u.Subscribed = true
-
-				if err := b.store.Put(ctx, u); err != nil {
-					return nil, fmt.Errorf("update user: %w", err)
-				}
-
+			if req.Text != b.AuthToken {
 				return []route.Response{{
 					ChatID: req.Chat.ID,
-					Text: "You are now authorized.\n" +
-						"Now, you can send me a link to any article, in order to test my capability of shortening it.\n" +
-						"But do not overuse it, please, we don't have an unlimited amount of free API calls.",
+					Text:   "You are not authorized, please provide a token.",
 				}}, nil
+			}
+
+			u.Authorized = true
+			u.Subscribed = true
+
+			if err := b.store.Put(ctx, u); err != nil {
+				return nil, fmt.Errorf("update user: %w", err)
 			}
 
 			return []route.Response{{
 				ChatID: req.Chat.ID,
-				Text:   "You are not authorized, please provide a token.",
+				Text: "You are now authorized.\n" +
+					"Now, you can send me a link to any article, in order to test my capability of shortening it.\n" +
+					"But do not overuse it, please, we don't have an unlimited amount of free API calls.",
 			}}, nil
 		}
 

@@ -67,7 +67,7 @@ jobs:
         with:
           push: true
           context: .
-          tags: ghcr.io/semior001/newsfeed:master
+          tags: ghcr.io/semior001/newsfeed:master,ghcr.io/semior001/newsfeed:${{github.sha}}
 
       - name: build and push tagged (latest) image
         id: docker_build_tagged
@@ -80,6 +80,6 @@ jobs:
 
       - name: curl updater
         id: curl_updater
-        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        if: ${{ github.ref == 'refs/heads/master' }}
         run:
           curl https://upd.semior.dev/update/newsfeed/${{secrets.UPDATER_TOKEN}}
