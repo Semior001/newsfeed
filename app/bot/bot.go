@@ -174,7 +174,7 @@ func (b *Bot) list(ctx context.Context, req route.Request) ([]route.Response, er
 	_, _ = sb.WriteString("Subscribers:\n")
 	for _, u := range users {
 		_, _ = sb.WriteString(fmt.Sprintf("id: %s, username: %s, authorized: %t, subscribed: %t\n",
-			u.ChatID, u.Username, u.Authorized, u.Subscribed))
+			u.ChatID, escapeMarkdown(u.Username), u.Authorized, u.Subscribed))
 	}
 
 	return []route.Response{{
@@ -248,7 +248,7 @@ func (b *Bot) article(ctx context.Context, req route.Request) ([]route.Response,
 	}
 
 	sb := &strings.Builder{}
-	if err = articleMessageTmpl.Execute(sb, article); err != nil {
+	if err = articleMessageTmpl.Execute(sb, escapeArticle(article)); err != nil {
 		return nil, fmt.Errorf("execute article message template: %w", err)
 	}
 
@@ -340,4 +340,27 @@ func (b *Bot) notifyAdmins(ctx context.Context, msg string) error {
 	}
 
 	return nil
+}
+
+var mdEscaper = strings.NewReplacer(
+	`*`, `\*`,
+	`_`, `\_`,
+	"`", "\\`",
+	"[", "\\[",
+	"]", "\\]",
+	"(", "\\(",
+	")", "\\)",
+	"~", "\\~",
+	">", "\\>",
+)
+
+func escapeArticle(a store.Article) store.Article {
+	a.Title = escapeMarkdown(a.Title)
+	a.Author = escapeMarkdown(a.Author)
+	a.Excerpt = escapeMarkdown(a.Excerpt)
+	return a
+}
+
+func escapeMarkdown(s string) string {
+	return mdEscaper.Replace(s)
 }
