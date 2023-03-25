@@ -14,6 +14,8 @@ import (
 	"github.com/Semior001/newsfeed/app/bot"
 	"github.com/Semior001/newsfeed/app/revisor"
 	"github.com/Semior001/newsfeed/app/store"
+	"github.com/Semior001/newsfeed/pkg/botx"
+	"github.com/Semior001/newsfeed/pkg/botx/botapi"
 	"golang.org/x/exp/slog"
 	"golang.org/x/sync/errgroup"
 )
@@ -69,17 +71,35 @@ func (r Run) Execute(_ []string) error {
 		}
 	}()
 
-	ctrl, err := bot.NewTelegram(lg.With(slog.String("prefix", "telegram")), r.Bot.Telegram.Token)
+	api, err := botapi.NewTelegram(
+		lg.With(slog.String("prefix", "telegram")),
+		r.Bot.Telegram.Token,
+		100,
+	)
 	if err != nil {
 		return fmt.Errorf("make telegram controller: %w", err)
 	}
 
-	b := bot.New(lg, ctrl, s, rev, bot.Params{
-		AdminIDs:  r.Bot.AdminIDs,
-		AuthToken: r.Bot.AuthToken,
-		Timeout:   r.Bot.Timeout,
-		Workers:   10,
-	})
+	ctrl := &bot.Ctrl{
+		Logger:         lg.With(slog.String("prefix", "bot")),
+		Store:          s,
+		Service:        rev,
+		API:            api,
+		AdminIDs:       r.Bot.AdminIDs,
+		AuthToken:      r.Bot.AuthToken,
+		HandlerTimeout: r.Bot.Timeout,
+	}
+
+	b := botx.NewBot(
+		ctrl.Routes().Handle,
+		api,
+		botx.WithLogger(lg.With(slog.String("prefix", "botx"))),
+		botx.WithWorkers(10),
+	)
+
+	if err := ctrl.NotifyAdmins(context.Background(), "bot started"); err != nil {
+		return fmt.Errorf("notify admins about started bot: %w", err)
+	}
 
 	ctx, stop := context.WithCancel(context.Background())
 
@@ -97,21 +117,40 @@ func (r Run) Execute(_ []string) error {
 		}
 	})
 	ewg.Go(func() error {
-		if err := b.Run(ctx); err != nil {
-			return fmt.Errorf("bot stopped, reason: %w", err)
-		}
-		return nil
-	})
-	ewg.Go(func() error {
-		if err := ctrl.Run(ctx); err != nil {
-			return fmt.Errorf("controller stopped, reason: %w", err)
-		}
+		lg.Info("starting bot")
+		b.Run(ctx)
+		lg.Warn("bot stopped")
 		return nil
 	})
 
+	// we should run api out of errgroup, because it lives longer than the context,
+	// as we want to notify admins about bot stopping
+	apiStopped := make(chan struct{})
+	go func() {
+		lg.Info("starting telegram api")
+		api.Run()
+		lg.Warn("telegram api stopped listening for updates")
+		apiStopped <- struct{}{}
+	}()
+
 	if err := ewg.Wait(); err != nil && !errors.Is(err, context.Canceled) {
+		msg := fmt.Sprintf("bot stopped with error: %v", err)
+
+		if sendErr := ctrl.NotifyAdmins(context.Background(), msg); sendErr != nil {
+			return fmt.Errorf("notify admins about stopped bot (for reason: %v): %w", err, sendErr)
+		}
+
 		return err
 	}
+
+	if err := ctrl.NotifyAdmins(context.Background(), "bot stopped"); err != nil {
+		return fmt.Errorf("notify admins about stopped bot: %w", err)
+	}
+
+	lg.Info("stopping telegram api")
+	api.Stop()
+	<-apiStopped
+	lg.Info("telegram api stopped")
 
 	return nil
 }

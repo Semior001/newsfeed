@@ -43,3 +43,12 @@ func (c *Chain) WithAttrs(attrs []slog.Attr) slog.Handler {
 		Handler:    c.Handler.WithAttrs(attrs),
 	}
 }
+
+type noop struct{}
+
+// NoOp returns a no-op handler.
+func NoOp() slog.Handler                               { return noop{} }
+func (noop) Enabled(context.Context, slog.Level) bool  { return false }
+func (noop) Handle(context.Context, slog.Record) error { return nil }
+func (noop) WithAttrs([]slog.Attr) slog.Handler        { return noop{} }
+func (noop) WithGroup(string) slog.Handler             { return noop{} }

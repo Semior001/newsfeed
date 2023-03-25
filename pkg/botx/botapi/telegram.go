@@ -1,25 +1,25 @@
-package bot
+// Package botapi contains implementations of bot API interfaces.
+package botapi
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strconv"
 
-	"github.com/Semior001/newsfeed/app/bot/route"
+	"github.com/Semior001/newsfeed/pkg/botx"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"golang.org/x/exp/slog"
 )
 
 // Telegram is a controller that handles requests from telegram.
 type Telegram struct {
-	log     *slog.Logger
 	api     *tgbotapi.BotAPI
-	updates chan route.Request
+	updates chan botx.Request
 }
 
 // NewTelegram returns a new telegram bot controller.
-func NewTelegram(lg *slog.Logger, token string) (*Telegram, error) {
+func NewTelegram(lg *slog.Logger, token string, bufferSize int) (*Telegram, error) {
 	api, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		return nil, fmt.Errorf("make new api: %w", err)
@@ -33,51 +33,50 @@ func NewTelegram(lg *slog.Logger, token string) (*Telegram, error) {
 	}
 
 	return &Telegram{
-		log:     lg,
 		api:     api,
-		updates: make(chan route.Request, 100),
+		updates: make(chan botx.Request, bufferSize),
 	}, nil
 }
 
-// Run starts telegram bot listener.
-func (b *Telegram) Run(ctx context.Context) error {
+// Run runs telegram bot listener until context is dead.
+func (b *Telegram) Run() {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 	updates := b.api.GetUpdatesChan(u)
 
-	b.log.InfoCtx(ctx, "started bot listener")
-
 	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
+		update, ok := <-updates
+		if !ok {
+			return
+		}
 
-		case update, ok := <-updates:
-			if !ok {
-				return errors.New("telegram updates chan closed")
-			}
-			if update.Message == nil || update.Message.Chat == nil || update.Message.Text == "" {
-				continue
-			}
+		if update.Message == nil || update.Message.Chat == nil || update.Message.Text == "" {
+			continue
+		}
 
-			b.updates <- route.Request{
-				Chat: route.Chat{
-					ID:       strconv.FormatInt(update.Message.Chat.ID, 10),
-					Username: update.Message.Chat.UserName,
-				},
-				Text: update.Message.Text,
-			}
+		b.updates <- botx.Request{
+			Chat: botx.Chat{
+				ID:       strconv.FormatInt(update.Message.Chat.ID, 10),
+				Username: update.Message.Chat.UserName,
+			},
+			Text: update.Message.Text,
 		}
 	}
 }
 
+// Stop stops telegram bot listener.
+func (b *Telegram) Stop() {
+	b.api.StopReceivingUpdates()
+	close(b.updates)
+}
+
 // Updates returns updates channel.
-func (b *Telegram) Updates() <-chan route.Request {
+func (b *Telegram) Updates() <-chan botx.Request {
 	return b.updates
 }
 
 // SendMessage sends message to telegram user.
-func (b *Telegram) SendMessage(ctx context.Context, resp route.Response) error {
+func (b *Telegram) SendMessage(ctx context.Context, resp botx.Response) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()

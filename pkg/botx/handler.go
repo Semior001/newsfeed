@@ -1,7 +1,9 @@
-// Package route contains definitions for routing and handling requests.
-package route
+package botx
 
 import "context"
+
+// Middleware specifies a basic middleware for bot handler.
+type Middleware func(Handler) Handler
 
 // Handler handles requests.
 type Handler func(ctx context.Context, req Request) ([]Response, error)

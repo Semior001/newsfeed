@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/Semior001/newsfeed/app/store"
 	cache "github.com/go-pkgz/expirable-cache/v2"
@@ -60,7 +61,8 @@ func (s *Service) GetArticle(ctx context.Context, u string) (store.Article, erro
 	if err != nil {
 		return store.Article{}, fmt.Errorf("extract article: %w", err)
 	}
-	article.URL = u
+	// remove trailing slash
+	article.URL = strings.TrimSuffix(article.URL, "/")
 
 	if article.BulletPoints, err = s.chatGPT.BulletPoints(ctx, article); err != nil {
 		return store.Article{}, fmt.Errorf("get bullet points: %w", err)

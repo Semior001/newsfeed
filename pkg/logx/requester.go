@@ -44,16 +44,19 @@ func LoggingRoundTripper(lg *slog.Logger, opts RoundTripperOpts) middleware.Roun
 			le.Error = err
 
 			le.Response.Headers = map[string]string{}
-			for k, vals := range resp.Header {
-				if lo.Contains(opts.SecretHeaders, k) {
-					le.Response.Headers[k] = "***"
-					continue
-				}
-				le.Response.Headers[k] = strings.Join(vals, ",")
-			}
 
-			resp.Body, le.Response.ResponseBody = copyAndTrim(resp.Body)
-			le.Response.StatusCode = resp.StatusCode
+			if resp != nil {
+				for k, vals := range resp.Header {
+					if lo.Contains(opts.SecretHeaders, k) {
+						le.Response.Headers[k] = "***"
+						continue
+					}
+					le.Response.Headers[k] = strings.Join(vals, ",")
+				}
+
+				resp.Body, le.Response.ResponseBody = copyAndTrim(resp.Body)
+				le.Response.StatusCode = resp.StatusCode
+			}
 
 			lg.LogAttrs(req.Context(), opts.Level, "response received",
 				slog.Any("response", le.Response),
