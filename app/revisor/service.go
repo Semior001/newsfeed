@@ -62,7 +62,7 @@ func (s *Service) GetArticle(ctx context.Context, u string) (store.Article, erro
 		return store.Article{}, fmt.Errorf("extract article: %w", err)
 	}
 	// remove trailing slash
-	article.URL = strings.TrimSuffix(article.URL, "/")
+	article.URL = strings.TrimSuffix(u, "/")
 
 	if article.BulletPoints, err = s.chatGPT.BulletPoints(ctx, article); err != nil {
 		return store.Article{}, fmt.Errorf("get bullet points: %w", err)
