@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Semior001/newsfeed/app/revisor"
@@ -182,6 +183,18 @@ func (c *Ctrl) NotifyAdmins(ctx context.Context, msg string) error {
 
 	return nil
 }
+
+var mdEscaper = strings.NewReplacer(
+	`*`, `\*`,
+	`_`, `\_`,
+	"`", "\\`",
+	"[", "\\[",
+	"]", "\\]",
+	"(", "\\(",
+	")", "\\)",
+	"~", "\\~",
+	">", "\\>",
+)
 
 func escapeMarkdown(s string) string {
 	return mdEscaper.Replace(s)

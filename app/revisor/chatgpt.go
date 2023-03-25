@@ -52,7 +52,7 @@ func NewChatGPT(lg *slog.Logger, cl http.Client, token string, maxResponseTokens
 
 	client := openai.NewClientWithConfig(config)
 
-	return &ChatGPT{
+	svc := &ChatGPT{
 		log:               lg,
 		cl:                client,
 		maxResponseTokens: maxResponseTokens,
@@ -60,6 +60,8 @@ func NewChatGPT(lg *slog.Logger, cl http.Client, token string, maxResponseTokens
 			WithLRU().
 			WithMaxKeys(100),
 	}
+
+	return svc
 }
 
 // maxRequestTokens is a maximum number of tokens that can be sent to OpenAI.

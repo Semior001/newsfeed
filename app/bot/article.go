@@ -9,7 +9,6 @@ import (
 	"text/template"
 
 	"github.com/Semior001/newsfeed/app/revisor"
-	"github.com/Semior001/newsfeed/app/store"
 	"github.com/Semior001/newsfeed/pkg/botx"
 )
 
@@ -18,10 +17,12 @@ type article struct {
 	Service *revisor.Service
 }
 
-var articleMessageTmpl = template.Must(template.New("articleMessage").Parse(`
-*{{.Title}} by {{.Author}}*
+var articleMessageTmpl = template.Must(template.New("articleMessage").
+	Funcs(template.FuncMap{"escapeMarkdown": escapeMarkdown}).
+	Parse(`
+*{{.Title | escapeMarkdown}} by {{.Author | escapeMarkdown}}*
 
-{{.BulletPoints}}
+{{.BulletPoints | escapeMarkdown}}
 
 [source]({{.URL}})
 `))
@@ -57,31 +58,14 @@ func (c *article) article(ctx context.Context, req botx.Request) ([]botx.Respons
 	}
 
 	sb := &strings.Builder{}
-	if err = articleMessageTmpl.Execute(sb, escapeArticle(article)); err != nil {
+	if err = articleMessageTmpl.Execute(sb, article); err != nil {
 		return nil, fmt.Errorf("execute article message template: %w", err)
 	}
 
+	result := strings.TrimSpace(sb.String())
+
 	return []botx.Response{{
 		ChatID: req.Chat.ID,
-		Text:   sb.String(),
+		Text:   result,
 	}}, nil
-}
-
-var mdEscaper = strings.NewReplacer(
-	`*`, `\*`,
-	`_`, `\_`,
-	"`", "\\`",
-	"[", "\\[",
-	"]", "\\]",
-	"(", "\\(",
-	")", "\\)",
-	"~", "\\~",
-	">", "\\>",
-)
-
-func escapeArticle(a store.Article) store.Article {
-	a.Title = escapeMarkdown(a.Title)
-	a.Author = escapeMarkdown(a.Author)
-	a.Excerpt = escapeMarkdown(a.Excerpt)
-	return a
 }
